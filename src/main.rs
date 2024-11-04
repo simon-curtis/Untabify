@@ -79,7 +79,7 @@ fn untabify_dir(dir_path: &str, glob: &Option<String>, tab_size: &usize) {
 }
 
 #[derive(Parser)]
-#[command(author = "Simon Curtis", version = "0.0.1", about = "A tool to untabify SQL", long_about = None)]
+#[command(version, about, long_about = None)]
 struct Args {
     #[arg(
         short,
