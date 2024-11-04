@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  # Job to create the release
+  # Job to create or update the release
   create-release:
     runs-on: ubuntu-latest
     outputs:
@@ -14,16 +14,33 @@ jobs:
       version: ${{ steps.extract_version.outputs.version }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Ensure full history is fetched for tagging
 
       - name: Extract Version from Cargo.toml
         id: extract_version
         run: |
-          VERSION=$(grep '^version' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          VERSION=$(awk -F '"' '/^version/ {print $2}' Cargo.toml)
           echo "VERSION=$VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Create Release
+      - name: Set up Git Config
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Delete Existing Tag (if any)
+        run: |
+          git tag -d "v${{ steps.extract_version.outputs.version }}" || true
+          git push origin :refs/tags/v${{ steps.extract_version.outputs.version }} || true
+
+      - name: Create Tag
+        run: |
+          git tag "v${{ steps.extract_version.outputs.version }}"
+          git push origin "v${{ steps.extract_version.outputs.version }}"
+
+      - name: Create or Update Release
         id: create_release
         uses: actions/create-release@v1
         env:
@@ -42,7 +59,7 @@ jobs:
     needs: create-release
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
@@ -51,10 +68,7 @@ jobs:
           override: true
 
       - name: Build Windows Executable
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --all-features
+        run: cargo build --release --all-features
 
       - name: Upload Windows Release Asset
         uses: actions/upload-release-asset@v1
@@ -72,7 +86,7 @@ jobs:
     needs: create-release
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
