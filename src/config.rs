@@ -7,6 +7,7 @@ use std::{
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Config {
+    #[serde(skip)]
     config_path: String,
     tab_sizes: HashMap<String, usize>,
 }

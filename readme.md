@@ -31,25 +31,6 @@ Once you've added the binary to your PATH, open a terminal and run:
 
 If you see a help message, you’re all set! 🎉
 
-## 📖 Usage
-Run untabify directly from your command line to get started. Below is the help message you’ll see:
-
-```terminal
-A tool to untabify
-
-Usage: untabify[.exe] [OPTIONS] <COMMAND>
-
-Commands:
-  file  Untabify a single file
-  dir   Untabify all files in a directory
-  help  Print this message or the help of the given subcommand(s)
-
-Options:
-  -t, --tab-size <TAB_SIZE>  The number of spaces to use for each tab [default: 4]
-  -h, --help                 Print help information
-  -V, --version              Print version information
-```
-
 ### Examples
 
 Convert tabs to spaces in all files within a directory:
@@ -58,7 +39,7 @@ Convert tabs to spaces in all files within a directory:
 > untabify dir "~/test_files"
 ```
 
-Convert tabs to spaces in a single file, specifying a tab size of 5 spaces:
+Convert tabs to spaces in a single file, specifying a tab size of 4 spaces:
 
 ```terminal
 > untabify file "~/test_files/test.py" -t 4
