@@ -1,18 +1,67 @@
-use clap::{arg, command, Parser, Subcommand};
+use args::{Args, Commands, ConfigAction, SetAction};
+use clap::Parser;
+use config::{Config, ConfigDefaults};
 use std::path::Path;
 use walkdir::WalkDir;
 
+mod args;
+mod config;
+
 fn main() {
-    // read in file from args
+    let config_path = ConfigDefaults::config_path();
+    let mut config = Config::load(&config_path);
     let args: Args = Args::parse();
+
     match &args.cmd {
-        Commands::File { path } => untabify_file(&path, &args.tab_size),
-        Commands::Dir { path, glob } => untabify_dir(path, glob, &args.tab_size),
+        Commands::File { path, tab_size } => untabify_file(path, tab_size, &config),
+        Commands::Dir {
+            path,
+            glob,
+            tab_size,
+        } => untabify_dir(path, glob, tab_size, &config),
+        Commands::Config { action } => match action {
+            ConfigAction::Print => println!("{}", serde_json::to_string_pretty(&config).unwrap()),
+            ConfigAction::Path => {
+                println!("Current path can be found:\n\n{}", config.config_path())
+            }
+            ConfigAction::Reset => {
+                let config = Config::default();
+                config.save();
+                println!("Config has been reset to default values");
+            }
+            ConfigAction::Set { action } => match action {
+                SetAction::TabSize {
+                    tab_size,
+                    extension,
+                } => match extension {
+                    Some(extension) => {
+                        config.set_tab_size(tab_size, Some(extension));
+                        println!("Set tab size for extension {} to {}", extension, tab_size);
+                    }
+                    None => {
+                        config.set_tab_size(tab_size, None);
+                        println!("Set default tab size to {}", tab_size);
+                    }
+                },
+            },
+        },
     }
 }
 
-fn untabify_file(path: &str, tab_size: &usize) {
+fn untabify_file(path: &str, tab_size: &Option<usize>, config: &Config) {
     println!("Untabifying file: {}", path);
+
+    let path = Path::new(path);
+    let tab_size = match tab_size {
+        Some(ts) => ts,
+        None => {
+            let extension = match path.extension() {
+                Some(ext) => ext.to_str().unwrap().to_lowercase(),
+                None => "default".to_string(),
+            };
+            config.get_tab_size(&extension)
+        }
+    };
 
     let converted = std::fs::read_to_string(path)
         .expect("failed to read file")
@@ -46,7 +95,7 @@ fn untabify_file(path: &str, tab_size: &usize) {
     std::fs::write(path, converted).expect("failed to write file");
 }
 
-fn untabify_dir(dir_path: &str, glob: &Option<String>, tab_size: &usize) {
+fn untabify_dir(dir_path: &str, glob: &Option<String>, tab_size: &Option<usize>, config: &Config) {
     let path = Path::new(dir_path);
     if !path.is_dir() {
         println!("Path {} is not a directory", dir_path);
@@ -72,41 +121,8 @@ fn untabify_dir(dir_path: &str, glob: &Option<String>, tab_size: &usize) {
                         continue;
                     }
                 }
-                _ => untabify_file(path, tab_size),
+                _ => untabify_file(path, tab_size, &config),
             };
         }
     }
-}
-
-#[derive(Parser)]
-#[command(version, about, long_about = None)]
-struct Args {
-    #[arg(
-        short,
-        long,
-        default_value_t = 4,
-        help = "The number of spaces to use for each tab"
-    )]
-    tab_size: usize,
-
-    #[command(subcommand)]
-    cmd: Commands,
-}
-
-#[derive(Subcommand, Clone)]
-enum Commands {
-    #[command(about = "Untabify a file")]
-    File {
-        #[arg(help = "The path of the file to untabify")]
-        path: String,
-    },
-
-    #[command(about = "Untabify an entire directory")]
-    Dir {
-        #[arg(help = "The directory path of the directory to untabify")]
-        path: String,
-
-        #[arg(short, long, help = "The file predicate, example: \"*.sql\"")]
-        glob: Option<String>,
-    },
 }
