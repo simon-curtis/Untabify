@@ -1,6 +1,6 @@
 # 🚀 Untabify
 
-**Untabify** is a command-line tool that removes pesky tab characters from your space-indented files while maintaining the integrity of your text alignment. It's especially handy for SQL files and other structured text files that require consistent spacing.
+**Untabify** is a command-line tool that removes pesky tab characters from your space-indented files while maintaining the integrity of your text alignment. It's especially handy for structured text files that require consistent spacing.
 
 ## 🌟 Features
 
@@ -35,7 +35,7 @@ If you see a help message, you’re all set! 🎉
 Run untabify directly from your command line to get started. Below is the help message you’ll see:
 
 ```terminal
-A tool to untabify SQL
+A tool to untabify
 
 Usage: untabify[.exe] [OPTIONS] <COMMAND>
 
@@ -45,7 +45,7 @@ Commands:
   help  Print this message or the help of the given subcommand(s)
 
 Options:
-  -t, --tab-size <TAB_SIZE>  The number of spaces to use for each tab [default: 5]
+  -t, --tab-size <TAB_SIZE>  The number of spaces to use for each tab [default: 4]
   -h, --help                 Print help information
   -V, --version              Print version information
 ```
@@ -61,7 +61,7 @@ Convert tabs to spaces in all files within a directory:
 Convert tabs to spaces in a single file, specifying a tab size of 5 spaces:
 
 ```terminal
-> untabify file "~/test_files/test.sql" -t 5
+> untabify file "~/test_files/test.py" -t 4
 ```
 
 ## 🛠️ Building from Source

@@ -6,13 +6,13 @@ fn main() {
     // read in file from args
     let args: Args = Args::parse();
     match &args.cmd {
-        Commands::File { path } => untabify_sql_file(&path, &args.tab_size),
+        Commands::File { path } => untabify_file(&path, &args.tab_size),
         Commands::Dir { path, glob } => untabify_dir(path, glob, &args.tab_size),
     }
 }
 
-fn untabify_sql_file(path: &str, tab_size: &usize) {
-    println!("Untabifying SQL file: {}", path);
+fn untabify_file(path: &str, tab_size: &usize) {
+    println!("Untabifying file: {}", path);
 
     let converted = std::fs::read_to_string(path)
         .expect("failed to read file")
@@ -72,7 +72,7 @@ fn untabify_dir(dir_path: &str, glob: &Option<String>, tab_size: &usize) {
                         continue;
                     }
                 }
-                _ => untabify_sql_file(path, tab_size),
+                _ => untabify_file(path, tab_size),
             };
         }
     }
@@ -84,7 +84,7 @@ struct Args {
     #[arg(
         short,
         long,
-        default_value_t = 5,
+        default_value_t = 4,
         help = "The number of spaces to use for each tab"
     )]
     tab_size: usize,
