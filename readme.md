@@ -10,11 +10,27 @@
 
 ## 📥 Installation
 
-### Step 1: Download the Binary
+### Scripted Installation
 
-1. Head to the [releases page](https://github.com/simon-curtis/untabify/releases) and download the latest binary for your operating system.
+### Windows
 
-### Step 2: Move the Binary
+```sh
+powershell -c "irm https://raw.githubusercontent.com/simon-curtis/Untabify/refs/heads/main/scripts/install.ps1 | iex"
+```
+
+### Linux
+
+```sh
+# !! NOT WRITTEN YET
+```
+
+### Manual Installation
+
+#### Step 1: Download the Binary
+
+Head to the [releases page](https://github.com/simon-curtis/untabify/releases) and download the latest binary for your operating system.
+
+#### Step 2: Move the Binary
 
 - **On Windows**: Place the binary in a folder like `C:/Users/{YOUR_PROFILE}/bin/untabify[.exe]`.
   - Add this folder to your PATH if it isn’t already (so you can use `untabify` from any terminal).
@@ -25,8 +41,8 @@
 
 Once you've added the binary to your PATH, open a terminal and run:
 
-```terminal
-> untabify --help
+```sh
+untabify --help
 ```
 
 If you see a help message, you’re all set! 🎉
@@ -35,14 +51,14 @@ If you see a help message, you’re all set! 🎉
 
 Convert tabs to spaces in all files within a directory:
 
-```terminal
-> untabify dir "~/test_files"
+```sh
+untabify dir "~/test_files"
 ```
 
 Convert tabs to spaces in a single file, specifying a tab size of 4 spaces:
 
-```terminal
-> untabify file "~/test_files/test.py" -t 4
+```sh
+untabify file "~/test_files/test.py" -t 4
 ```
 
 ## 🛠️ Building from Source
@@ -55,16 +71,16 @@ Clone the repository and navigate into the project directory.
 
 Run the following command to build the release version:
 
-```terminal
-> cargo build --release
+```sh
+cargo build --release
 ```
 
 The compiled binary will be located in ./target/release/untabify[.exe].
 
 To see the help message, you can then run:
 
-```terminal
-> ./target/release/untabify[.exe] --help
+```sh
+./target/release/untabify[.exe] --help
 ```
 
 ## 🤝 Contributing

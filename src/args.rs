@@ -3,7 +3,7 @@ use clap::{arg, command, Parser, Subcommand};
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 pub struct Args {
-    #[arg(help = "An absolute file path or glob, example: \"*.sql\"")]
+    #[arg(help = "An absolute file path or glob, example: \"**\\*.sql\"")]
     pub file_path: String,
 
     #[arg(
