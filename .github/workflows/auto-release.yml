@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "src/**"
+      - "Cargo.toml"
 
 jobs:
   # Job to create or update the release
@@ -76,7 +79,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./target/release/untabify.exe
+          asset_path: ./target/x86_64-pc-windows-msvc/release/untabify.exe
           asset_name: untabify-windows-x64.exe
           asset_content_type: application/octet-stream
 
