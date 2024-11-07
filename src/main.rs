@@ -1,4 +1,4 @@
-use args::{Args, Commands, ConfigAction, SetAction};
+use args::{Args, Command, ConfigAction, SetAction};
 use clap::Parser;
 use config::{Config, ConfigDefaults};
 use std::path::Path;
@@ -13,43 +13,79 @@ fn main() {
     let args: Args = Args::parse();
 
     match &args.cmd {
-        Commands::File { path, tab_size } => untabify_file(path, tab_size, &config),
-        Commands::Dir {
-            path,
-            glob,
-            tab_size,
-        } => untabify_dir(path, glob, tab_size, &config),
-        Commands::Config { action } => match action {
-            ConfigAction::Print => println!("{}", serde_json::to_string_pretty(&config).unwrap()),
-            ConfigAction::Path => {
-                println!("Current path can be found:\n\n{}", config.config_path())
-            }
-            ConfigAction::Reset => {
-                let config = Config::default();
-                config.save();
-                println!("Config has been reset to default values");
-            }
-            ConfigAction::Set { action } => match action {
-                SetAction::TabSize {
-                    tab_size,
-                    extension,
-                } => match extension {
-                    Some(extension) => {
-                        config.set_tab_size(tab_size, Some(extension));
-                        println!("Set tab size for extension {} to {}", extension, tab_size);
-                    }
-                    None => {
-                        config.set_tab_size(tab_size, None);
-                        println!("Set default tab size to {}", tab_size);
-                    }
+        Some(cmd) => match cmd {
+            Command::Config { action } => match action {
+                ConfigAction::Print => {
+                    println!("{}", serde_json::to_string_pretty(&config).unwrap())
+                }
+                ConfigAction::Path => {
+                    println!("Current path can be found:\n\n{}", config.config_path())
+                }
+                ConfigAction::Reset => {
+                    let config = Config::default();
+                    config.save();
+                    println!("Config has been reset to default values");
+                }
+                ConfigAction::Set { action } => match action {
+                    SetAction::TabSize {
+                        tab_size,
+                        extension,
+                    } => match extension {
+                        Some(extension) => {
+                            config.set_tab_size(tab_size, Some(extension));
+                            println!("Set tab size for extension {} to {}", extension, tab_size);
+                        }
+                        None => {
+                            config.set_tab_size(tab_size, None);
+                            println!("Set default tab size to {}", tab_size);
+                        }
+                    },
                 },
             },
         },
+        None => untabify_files(&args, &config),
     }
 }
 
-fn untabify_file(path: &str, tab_size: &Option<usize>, config: &Config) {
-    println!("Untabifying file: {}", path);
+fn untabify_files(args: &Args, config: &Config) {
+    let wd = match args.dir {
+        Some(ref dir_path) => {
+            let wd = Path::new(dir_path);
+            if !wd.is_dir() {
+                println!("Path {} is not a directory", dir_path);
+                return;
+            }
+            println!("Untabifying directory: {}", dir_path);
+            wd
+        }
+        None => Path::new("."),
+    };
+
+    let path = Path::new(&args.file_path);
+
+    if path.is_absolute() {
+        if path.exists() {
+            untabify_file(&path, &args.tab_size, config)
+        }
+        else {
+            println!("File \"{}\" does not exist", path.display());
+        }
+    }
+    else {
+        let glob = glob::Pattern::new(&args.file_path).expect("Failed to parse glob");
+
+        WalkDir::new(wd)
+            .into_iter()
+            .filter_map(Result::ok)
+            .filter(|entry| entry.file_type().is_file())
+            .map(|entry| entry.path().to_owned())
+            .filter(|path| glob.matches(path.to_str().unwrap()))
+            .for_each(|path| untabify_file(&path, &args.tab_size, config));
+    }
+}
+
+fn untabify_file(path: &Path, tab_size: &Option<usize>, config: &Config) {
+    println!("Untabifying file: {}", path.display());
 
     let path = Path::new(path);
     let tab_size = match tab_size {
@@ -87,42 +123,10 @@ fn untabify_file(path: &str, tab_size: &Option<usize>, config: &Config) {
                 }
             }
 
-            new_line
+            new_line.trim_end().to_string()
         })
         .collect::<Vec<String>>()
         .join("\n");
 
     std::fs::write(path, converted).expect("failed to write file");
-}
-
-fn untabify_dir(dir_path: &str, glob: &Option<String>, tab_size: &Option<usize>, config: &Config) {
-    let path = Path::new(dir_path);
-    if !path.is_dir() {
-        println!("Path {} is not a directory", dir_path);
-        return;
-    }
-
-    let glob = glob
-        .as_ref()
-        .map(|g| glob::Pattern::new(g).expect("Failed to parse glob"));
-
-    println!("Untabifying directory: {}", dir_path);
-
-    for entry in WalkDir::new(path).into_iter().filter_map(|e| e.ok()) {
-        if entry.file_type().is_file() {
-            let path = entry
-                .path()
-                .to_str()
-                .expect("Failed to convert path to string");
-
-            match glob {
-                Some(ref glob) => {
-                    if !glob.matches(path) {
-                        continue;
-                    }
-                }
-                _ => untabify_file(path, tab_size, &config),
-            };
-        }
-    }
 }
