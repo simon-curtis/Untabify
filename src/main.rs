@@ -1,7 +1,11 @@
 use args::{Args, Command, ConfigAction, SetAction};
 use clap::Parser;
 use config::{Config, ConfigDefaults};
-use std::path::Path;
+use std::{
+    fs,
+    io::{BufRead, BufReader},
+    path::Path,
+};
 use walkdir::WalkDir;
 
 mod args;
@@ -66,12 +70,10 @@ fn untabify_files(args: &Args, config: &Config) {
     if path.is_absolute() {
         if path.exists() {
             untabify_file(&path, &args.tab_size, config)
-        }
-        else {
+        } else {
             println!("File \"{}\" does not exist", path.display());
         }
-    }
-    else {
+    } else {
         let glob = glob::Pattern::new(&args.file_path).expect("Failed to parse glob");
 
         WalkDir::new(wd)
@@ -85,7 +87,7 @@ fn untabify_files(args: &Args, config: &Config) {
 }
 
 fn untabify_file(path: &Path, tab_size: &Option<usize>, config: &Config) {
-    println!("Untabifying file: {}", path.display());
+    print!("Untabifying file: {}", path.display());
 
     let path = Path::new(path);
     let tab_size = match tab_size {
@@ -99,9 +101,11 @@ fn untabify_file(path: &Path, tab_size: &Option<usize>, config: &Config) {
         }
     };
 
-    let converted = std::fs::read_to_string(path)
-        .expect("failed to read file")
+    let file = fs::File::open(path).expect("File not found");
+    let buf = BufReader::new(file);
+    let converted = buf
         .lines()
+        .filter_map(Result::ok)
         .map(|line| {
             if line.is_empty() {
                 return line.to_string();
@@ -128,5 +132,8 @@ fn untabify_file(path: &Path, tab_size: &Option<usize>, config: &Config) {
         .collect::<Vec<String>>()
         .join("\n");
 
-    std::fs::write(path, converted).expect("failed to write file");
+    match std::fs::write(path, converted) {
+        Ok(_) => println!(" - done"),
+        Err(e) => println!(" - failed to write file: {}", e),
+    }
 }
