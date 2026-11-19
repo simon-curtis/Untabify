@@ -65,24 +65,37 @@ fn untabify_files(args: &Args, config: &Config) {
         None => Path::new("."),
     };
 
-    let path = Path::new(&args.file_path);
+    let literal_path = wd.join(&args.file_path);
 
-    if path.is_absolute() {
-        if path.exists() {
-            untabify_file(&path, &args.tab_size, config)
-        } else {
-            println!("File \"{}\" does not exist", path.display());
+    if literal_path.is_file() {
+        untabify_file(&literal_path, &args.tab_size, config);
+        return;
+    }
+
+    if Path::new(&args.file_path).is_absolute() {
+        println!("File \"{}\" does not exist", literal_path.display());
+        return;
+    }
+
+    let glob = match glob::Pattern::new(&args.file_path) {
+        Ok(glob) => glob,
+        Err(e) => {
+            println!("\"{}\" is not an existing file or a valid glob: {}", args.file_path, e);
+            return;
         }
-    } else {
-        let glob = glob::Pattern::new(&args.file_path).expect("Failed to parse glob");
+    };
 
-        WalkDir::new(wd)
-            .into_iter()
-            .filter_map(Result::ok)
-            .filter(|entry| entry.file_type().is_file())
-            .map(|entry| entry.path().to_owned())
-            .filter(|path| glob.matches(path.to_str().unwrap()))
-            .for_each(|path| untabify_file(&path, &args.tab_size, config));
+    let matched = WalkDir::new(wd)
+        .into_iter()
+        .filter_map(Result::ok)
+        .filter(|entry| entry.file_type().is_file())
+        .map(|entry| entry.path().to_owned())
+        .filter(|path| path.to_str().is_some_and(|p| glob.matches(p)))
+        .inspect(|path| untabify_file(path, &args.tab_size, config))
+        .count();
+
+    if matched == 0 {
+        println!("No files match \"{}\"", args.file_path);
     }
 }
 
